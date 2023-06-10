@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Build
+        run: ./gradlew assemble
+
+      - name: ktlint
+        if: ${{ github.event_name != 'pull_request' }}
+        run: ./gradlew ktlintCheck
+        continue-on-error: false
+
+      - name: ktlint and Report
+        if: ${{ github.event_name == 'pull_request' }}
+        run: ./gradlew ktlintCheck
+        continue-on-error: true
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        if: ${{ github.event_name == 'pull_request' }}
+        with:
+          ruby-version: '2.6'
+          bundler-cache: true
+
+      - name: Run Danger
+        if: ${{ github.event_name == 'pull_request' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gem install bundler
+          bundle install
+          bundle exec danger
