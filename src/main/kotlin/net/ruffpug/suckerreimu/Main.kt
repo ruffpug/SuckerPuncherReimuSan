@@ -5,6 +5,9 @@ import kotlinx.browser.window
 import org.w3c.dom.CanvasRenderingContext2D
 import org.w3c.dom.HTMLCanvasElement
 
+ class BadClass(val x: Int,
+val y: String)
+
 private fun main() {
     //  ログの出力設定を行う。
     Logger.isEnabled = !isReleaseBuild
